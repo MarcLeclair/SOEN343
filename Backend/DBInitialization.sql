@@ -10,6 +10,7 @@ CREATE TABLE monitors(
 	brand varchar(30),
 	price dec(6,2),
     size int,
+	decommissioned bool,
 	PRIMARY KEY(id)
 );
 
@@ -26,6 +27,7 @@ CREATE TABLE desktops(
 	hardDrive int,
 	os varchar(15),
 	dimensions varchar(20),
+	decommissioned bool,
 	PRIMARY KEY(id)
 );
 
@@ -45,6 +47,7 @@ CREATE TABLE tablets(
     dimensions varchar(20),
     battery int,
     camera bool,
+	decommissioned bool,
     PRIMARY KEY(id)
 );
 
@@ -64,6 +67,7 @@ CREATE TABLE laptops(
 	battery int,
 	camera bool,
 	touchscreen bool,
+	decommissioned bool,
 	PRIMARY KEY(id)
 );
 
@@ -77,10 +81,12 @@ CREATE TABLE admins(
 	lname varchar(20),
 	email varchar(30),
 	password CHAR(128),
+	token varchar(512),
 	PRIMARY KEY(id)
 );
 
-DROP TABLE IF EXISTS clients;
+
+DROP TABLE IF EXISTS clients CASCADE;
 CREATE TABLE clients(
 
 	id UUID DEFAULT uuid_generate_v1(),
@@ -90,12 +96,30 @@ CREATE TABLE clients(
 	password CHAR(128),
 	address varchar(30),
 	phone varchar(30),
+	token varchar(512),
 	PRIMARY KEY(id)
 );
 
-DROP TABLE IF EXISTS inventories;
+DROP TABLE IF EXISTS inventories CASCADE;
 CREATE TABLE inventories(
 	"serialNumber" UUID DEFAULT uuid_generate_v1(),
 	"electronicID" UUID,
 	PRIMARY KEY("serialNumber")
 );
+
+DROP TABLE IF EXISTS cart CASCADE;
+CREATE TABLE cart(
+	id UUID DEFAULT uuid_generate_v1(),
+	client_id UUID REFERENCES clients(id) ON DELETE CASCADE ,
+	PRIMARY KEY(id)
+);
+
+DROP TABLE IF EXISTS bought_inventory CASCADE;
+CREATE TABLE bought_inventory(
+	"serialNumber" UUID,
+	"electronicID" UUID,
+	cart_id UUID REFERENCES cart(id) ON DELETE CASCADE,
+	return_date timestamp
+);
+
+

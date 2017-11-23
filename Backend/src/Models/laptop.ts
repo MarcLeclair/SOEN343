@@ -1,6 +1,7 @@
 import { ComputerSystem } from "./computersystem";
 import { dbconnection } from "./dbconnection";
 import { Electronic } from "./electronic";
+import {LaptopModifyStrategy} from "../Strategies/laptopmodifystrategy";
 
 var db = new dbconnection().getDBConnector();
 
@@ -11,15 +12,16 @@ export class Laptop extends ComputerSystem {
 	private touchscreen: boolean;
 
 	constructor(id: string, weight: number, modelNumber: string, brand: string,
-				price: number, processor: string, ram: number, cpus: number,
+				price: number, decommissioned:boolean, processor: string, ram: number, cpus: number,
 				hardDrive: number, os: string, displaySize: number,
 				battery: number, camera: boolean, touchscreen: boolean) {
 		let electronicType = "Laptop";
-		super(id, weight, modelNumber, brand, price, electronicType, processor, ram, cpus, hardDrive, os);
+		super(id, weight, modelNumber, brand, price, decommissioned, electronicType, processor, ram, cpus, hardDrive, os);
 		this.displaySize = displaySize;
 		this.battery = battery;
 		this.camera = camera;
 		this.touchscreen = touchscreen;
+		this.setModifyStrategy(new LaptopModifyStrategy());
 	}
  	/****************************************************************
      * Getters and Setters											*
@@ -37,13 +39,13 @@ export class Laptop extends ComputerSystem {
 	/**************************************************************
 	 * Method to persist an object of type Laptop to the database *
 	 **************************************************************/
-	save(): boolean {
+	public async save(): Promise<boolean> {
 		let queryParameters = ["'"+this.getId()+"'", this.getWeight(),"'"+ this.getModelNumber() +"'",
 								"'"+this.getBrand() +"'", this.getPrice(), "'"+this.processor +"'",
 							   this.ram, this.cpus, this.hardDrive,
 							   "'"+this.os+"'", this.getDisplaySize(), this.getBattery(),
-							   this.getCamera(), this.getTouchscreen()];
-		let queryText = 'INSERT INTO laptops (id,weight,modelnumber,brand,price,processor,ram,cpus,harddrive,os,displaysize,battery,camera,touchscreen)VALUES (' + queryParameters.join(',') + ');';
+							   this.getCamera(), this.getTouchscreen(), this.getDecommissioned()];
+		let queryText = 'INSERT INTO laptops (id,weight,modelnumber,brand,price,processor,ram,cpus,harddrive,os,displaysize,battery,camera,touchscreen,decommissioned)VALUES (' + queryParameters.join(',') + ');';
 		db.none(queryText)
 			.then(function() {
 				console.log("Laptop added to db");
@@ -64,7 +66,7 @@ export class Laptop extends ComputerSystem {
 		return db.one("SELECT * FROM laptops WHERE id ='"  +id +  "';")
 			.then(function(row){
 				console.log("Matching object found");
-				return new Laptop(row.id,row.weight,row.modelNumber,row.brand,row.price,row.processor,row.ram,row.cpus,row.hardDrive,row.os,row.displaySize,row.battery,row.camera,row.touchscreen);
+				return new Laptop(row.id,row.weight,row.modelNumber,row.brand,row.price,row.decommissioned,row.processor,row.ram,row.cpus,row.hardDrive,row.os,row.displaySize,row.battery,row.camera,row.touchscreen);
 
 			})
 			.catch(function(err) {
@@ -79,7 +81,7 @@ export class Laptop extends ComputerSystem {
 		let queryText = "UPDATE laptops SET weight=" + this.getWeight() + ",modelnumber='"+ this.getModelNumber() + "',brand='" + this.getBrand()
 						+ "',price=" + this.getPrice() + ", processor='" +this.processor + "',ram=" + this.ram + ",cpus="+ this.cpus
 						+ ",harddrive=" + this.hardDrive + ",os='" + this.os + "',displaysize=" + this.getDisplaySize() + ",battery="+ this.getBattery()
-						+ ",camera=" + this.getCamera() + ",touchscreen=" +this.getTouchscreen() + " WHERE id ='" + this.getId() + "';";
+						+ ",camera=" + this.getCamera() + ",touchscreen=" +this.getTouchscreen() + ",decommissioned=" +this.getDecommissioned() +  " WHERE id ='" + this.getId() + "';";
 		return db.none(queryText)
 			.then(function() {
 				console.log("Modified Laptop in the db");
@@ -95,14 +97,17 @@ export class Laptop extends ComputerSystem {
 	 * Method to delete an object of type Laptop to the database *
 	 **************************************************************/
 	public async delete(): Promise<boolean> {
-        return db.none("DELETE FROM laptops WHERE id ='"+ this.getId() + "';")
-            .then(function () {
-				console.log("Laptop object deleted in db: ");
-                return true;
-            }).catch(function (err) {
-            console.log("No matching object found for delete: "+ err);
-            return false;
-        });
+		this.setDecommissioned(true);
+		let queryText = "UPDATE laptops SET decommissioned=" + this.getDecommissioned() + " WHERE id ='" + this.getId() + "';";
+		return db.none(queryText)
+			.then(function() {
+				console.log("Laptop was decommissioned");
+				return true;
+			})
+			.catch(function(err) {
+				console.log("Could not decommission/delete Laptop:" + err);
+				return false;
+		});
 	}
 	
 	/*******************************************************
@@ -114,10 +119,12 @@ export class Laptop extends ComputerSystem {
             .then(function (rows) {
 				let laptops: Electronic[] = new Array<Electronic>();
                 for(let i=0; i< rows.length; i++){
-					laptops.push(new Laptop(rows[i].id,rows[i].weight,rows[i].modelnumber, rows[i].brand,
-					rows[i].price,rows[i].processor, rows[i].ram, rows[i].cpus, rows[i].harddrive, rows[i].os,
-					rows[i].displaysize, rows[i].battery, rows[i].camera,rows[i].touchscreen));
+					if(!rows[i].decommissioned){
+						laptops.push(new Laptop(rows[i].id,rows[i].weight,rows[i].modelnumber, rows[i].brand,
+							rows[i].price,rows[i].decommissioned,rows[i].processor, rows[i].ram, rows[i].cpus, rows[i].harddrive, rows[i].os,
+							rows[i].displaysize, rows[i].battery, rows[i].camera,rows[i].touchscreen));
 					}
+				}
 					return  laptops;
             }).catch(function (err) {
                 console.log("Error in getting all laptops:" + err);

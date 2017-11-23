@@ -1,30 +1,19 @@
 import * as bcrypt from "bcrypt";
 
-enum Routes
-{
-	getRoot = "get/",
-	postLogin = "post/api/users/login",
-	postLogout = "post/api/users/logout",
-	getProduct = "get/api/products/",
-	postProduct = "post/api/products/",
-	deleteProduct = "delete/api/products/",
-	getInventory = "get/api/inventories/product/",
-	postInventory = "post/api/inventories/",
-	deleteInventory = "delete/api/inventories/product/",
-	modifyProducts = "put/api/products/"
-}
 export abstract class User {
 	public id: string;
-	static Routes = Routes;
 	protected fname: string;
 	protected lname: string;
 	public email: string;
 	public password: string;
-    constructor(id: string, fname: string, lname: string, email: string, password: string) {
+	public token: string;
+  
+  constructor(id: string, fname: string, lname: string, email: string, password: string, token: string) {
 		this.id = id;
 		this.fname = fname;
 		this.lname = lname;
 		this.email = email;
+		this.token = token;
 		this.password = (password.trim().length == 60 && password.split("$").length == 4) ? password : bcrypt.hashSync(password, 10);
 	}
 
@@ -58,6 +47,6 @@ export abstract class User {
 	public getPassword():string{
 		return this.password;
 	}
-	abstract checkPrivilege(route : string) : boolean;
 
+	abstract getType(): string;
 }

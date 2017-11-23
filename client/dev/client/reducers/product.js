@@ -1,4 +1,4 @@
-import * as actions from '../actions/action-types.js'
+import * as actions from '../actions/action-types.js';
 
 const defaultDropDownsProduct = {
     id: '',
@@ -17,21 +17,36 @@ const defaultDropDownsProduct = {
     displaySize: '',
     battery: '',
     camera: '',
-    touchScreen: '',
+    touchscreen: '',
     size: ''
+};
+const defaultFilters = {
+    electronicType: 'Type',
+    priceLow: '',
+    priceHigh: '',
+    maxSize: '',
+    maxWeight: '',
+    brand: 'Brand'
 };
 
 const initialState = {
+    isFetchingInventory: false,
     isFetching: false,
     filterSet: false,
+    inventoryCount: 0,
     error: "",
     productFilter: "",
+    filters: defaultFilters,
     products: [],
     productViewOpen: false,
     productDeleteOpen: false,
     addProduct: {
         addingProduct: false,
         addProductOpen: false,
+        error: false
+    },
+    addToCart: {
+        addingToCart: false,
         error: false
     },
     modifyProduct: {
@@ -42,8 +57,10 @@ const initialState = {
     dropDownsProduct: defaultDropDownsProduct,
     selectedProduct: {},
     page: 1,
-    maxPage: undefined,
-    productsPerPage: 10
+    productsPerPage: 10,
+    numProducts: 0,
+    brands: [],
+    priceSort: ''
 };
 
 export default function (state = initialState, action) {
@@ -51,7 +68,7 @@ export default function (state = initialState, action) {
         case actions.SET_PRODUCTS_FILTER:
             return {
                 ...state,
-                productFilter: action.productFilter,
+                filters: action.filters,
                 filterSet: true
             };
             break;
@@ -66,7 +83,6 @@ export default function (state = initialState, action) {
                 ...state,
                 products: action.products,
                 isFetching: false,
-                filterSet: false
             };
             break;
         case actions.GET_PRODUCTS_FAILURE:
@@ -82,6 +98,9 @@ export default function (state = initialState, action) {
             break;
         case actions.HIDE_PRODUCT_VIEW_DIALOG:
             return { ...state, productViewOpen: false };
+            break;
+        case actions.SET_PRODUCT:
+            return { ...state, selectedProduct: action.product };
             break;
         case actions.SHOW_DELETE_PRODUCT_DIALOG:
             return { ...state, productDeleteOpen: true, selectedProduct: action.product };
@@ -124,7 +143,8 @@ export default function (state = initialState, action) {
                 addProduct: {
                     ...state.addProduct,
                     error: false,
-                    addingProduct: false
+                    addingProduct: false,
+                    addProductOpen: false
                 }
             };
             break;
@@ -177,7 +197,8 @@ export default function (state = initialState, action) {
                 modifyProduct: {
                     ...state.modifyProduct,
                     modifyingProduct: false,
-                    error: false
+                    error: false,
+                    modifyProductOpen: false
                 }
             };
             break;
@@ -189,30 +210,88 @@ export default function (state = initialState, action) {
                     modifyingProduct: false,
                     error: true
                 }
-            }
-            break;
-        case actions.INCREMENT_PRODUCT_PAGE:
-            return {
-                ...state,
-                page: state.page + 1
-            }
-            break;
-        case actions.DECREMENT_PRODUCT_PAGE:
-            return {
-                ...state,
-                page: state.page - 1
-            }
+            };
             break;
         case actions.SET_PRODUCT_PAGE:
             return {
                 ...state,
                 page: action.pageNumber
-            }
+            };
             break;
-        case actions.SET_MAX_PRODUCT_PAGE:
+        case actions.SET_ROWS_PER_PAGE:
             return {
                 ...state,
-                maxPage: Math.ceil(action.numProducts / state.productsPerPage)
+                productsPerPage: action.rowsPerPage
+            };
+            break;
+        case actions.SET_NUM_PRODUCTS:
+            return {
+                ...state,
+                numProducts: action.numProducts
+            };
+            break;
+        case actions.ADD_TO_CART_REQUEST:
+            return {
+                ...state,
+                addToCart: {
+                    ...state.addToCart,
+                    addingToCart: true,
+                    error: false
+                }
+            };
+            break;
+        case actions.ADD_TO_CART_SUCCESS:
+            return {
+                ...state,
+                addToCart: {
+                    ...state.addToCart,
+                    error: false,
+                    addingToCart: false
+                }
+            };
+            break;
+        case actions.ADD_TO_CART_FAILURE:
+            return {
+                ...state,
+                addToCart: {
+                    ...state.addToCart,
+                    error: true,
+                    addingToCart: false
+                }
+            };
+            break;
+        case actions.GET_INVENTORY_COUNT:
+            return {
+                ...state,
+                isFetchingInventory: true
+            }
+        case actions.RECEIVE_INVENTORY_COUNT:
+            return {
+                ...state,
+                isFetchingInventory: false,
+                inventoryCount: action.count
+            }
+        case actions.RESET_FILTERS:
+            return {
+                ...state,
+                filters: defaultFilters,
+            }
+        case actions.GET_BRANDS:
+            return {
+                ...state,
+                brands: action.brands,
+            }
+        case actions.GET_BRANDS_FAILURE:
+            return {
+                ...state,
+                error: true
+            };
+            break;
+        case actions.SET_PRICE_SORT:
+            return {
+                ...state,
+                priceSort: action.priceSort,
+                filterSet: true
             };
             break;
         default:

@@ -1,15 +1,16 @@
 import { dbconnection } from "./dbconnection";
 import { User } from "./user";
+import {Igateway} from "./igateway";
 
 var db =   new dbconnection().getDBConnector();
 
-export class Client extends User {
+export class Client extends User implements Igateway{
 
 	private address: string;
 	private phone: string;
 
-    constructor(id: string, fname: string, lname: string, email: string, password: string, address: string, phone: string) {
-        super(id, fname, lname, email, password);
+    constructor(id: string, fname: string, lname: string, email: string, password: string, address: string, phone: string, token: string) {
+        super(id, fname, lname, email, password, token);
         this.address = address;
         this.phone = phone;
     }
@@ -28,7 +29,7 @@ export class Client extends User {
     }
 
     public async delete(): Promise<boolean>{
-    return db.none("DELETE FROM clients WHERE id ='"+ this.id + "';")
+    return db.none("DELETE FROM clients CASCADE WHERE id ='"+ this.id + "';")
         .then(function () {
             return true;
         }).catch(function (err) {
@@ -42,7 +43,7 @@ export class Client extends User {
         let client: User;
         db.one('SELECT * FROM clients WHERE id =' + id + ';')
             .then(function (row) {
-                client = new Client(row.id, row.fname, row.lname, row.email, row.password, row.address, row.phone);
+                client = new Client(row.id, row.fname, row.lname, row.email, row.password, row.address, row.phone, row.token);
             }).catch(function (err) {
                 console.log("No matching object found: "+ err);
                 return null;
@@ -56,7 +57,7 @@ export class Client extends User {
                 let clientObjects: User[] = new Array<User>();
                 for(var i=0; i<data.length; i++){
                     clientObjects.push(new Client(data[i].id,data[i].fname,data[i].lname,
-                    data[i].email, data[i].password, data[i].address, data[i].phone));
+                    data[i].email, data[i].password, data[i].address, data[i].phone, data[i].token));
                 }
                 return clientObjects;
             }).catch(function (err) {
@@ -70,7 +71,7 @@ export class Client extends User {
      ******************************************************/
     public async save(): Promise<boolean> {
         let queryValues = ["'"+this.getId()+"'","'"+this.getFName()+"'","'"+this.getLName()+"'","'"+this.getEmail()+"'",
-                           "'"+this.getPassword()+"'","'"+this.getAddress()+"'", "'"+this.getPhone()+"'"];
+                           "'"+this.getPassword()+"'","'"+this.getAddress()+"'", "'"+this.getPhone()+"'", "'"+this.token+"'"];
         return db.none("INSERT INTO clients VALUES (" + queryValues.join(',') + ")")
             .then(function() {
                 console.log("New Client was added to the database.");
@@ -81,25 +82,10 @@ export class Client extends User {
                 return false;
             });
     }
-    
 
-    public checkPrivilege(route: string): boolean
-    {
-        route = route + "/";  // append slash in case one is missing; no problem if there are two trailing slashes
-        let unauthorizedRoutes: string[] = [
-                User.Routes.postProduct,
-                User.Routes.deleteProduct,
-                User.Routes.postInventory,
-                User.Routes.deleteInventory,
-                User.Routes.modifyProducts
-            ];
-
-        for(let routeKey in User.Routes)
-        {
-            if(route.indexOf(User.Routes[routeKey]) !== -1)  // if the starts of strings match e.g. 'post/api/products/abcd' and 'post/api/products/'
-                return (unauthorizedRoutes.indexOf(User.Routes[routeKey]) == -1);  // no privilege if route is an unauthorized route
-        }
-        return true;  // if route is not specified as unauthorized, allow it
+    public getType(): string {
+        return Client.name;
     }
 
+    async modify(): Promise<boolean> { return Promise.resolve(true)};
 }

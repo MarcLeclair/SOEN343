@@ -6,3 +6,4 @@ dist/
 .vs/
 client/build/js/app.min.js
 
+/Backend/node_modules/kaop-ts/dist/docs

@@ -7,9 +7,9 @@ export abstract class ComputerSystem extends Electronic{
     hardDrive: number;
     os: string;
 
-    constructor(id: string, weight: number, modelNumber: string, brand: string, price: number, electronicType: string, processor: string, ram: number,cpus: number, hardDrive: number, os: string) 
+    constructor(id: string, weight: number, modelNumber: string, brand: string, price: number, decommissioned: boolean, electronicType: string, processor: string, ram: number,cpus: number, hardDrive: number, os: string) 
     {
-        super(id, weight, modelNumber, brand, price, electronicType);
+        super(id, weight, modelNumber, brand, price, decommissioned, electronicType);
         this.processor = processor;
         this.ram = ram;
         this.cpus = cpus;

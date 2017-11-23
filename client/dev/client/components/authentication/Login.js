@@ -4,9 +4,11 @@ import {connect} from 'react-redux';
 import Grid from 'material-ui/Grid';
 import Paper from 'material-ui/Paper';
 import Button from 'material-ui/Button';
+import Checkbox from 'material-ui/Checkbox';
 import Snackbar from 'material-ui/Snackbar';
 import TextField from 'material-ui/TextField';
 import Typography from 'material-ui/Typography';
+import { FormControlLabel } from 'material-ui/Form';
 import { CircularProgress } from 'material-ui/Progress';
 
 import Registration from '../registration/Registration';
@@ -31,25 +33,32 @@ class Login extends Component {
     super(props);
     this.state = {
       email: "",
-      password: ""
+      password: "",
+      clearTokens: false
     }
     this.login = () => {
-      this.props.attemptLogin({ email: this.state.email, password: this.state.password });
+      this.props.attemptLogin({ email: this.state.email, password: this.state.password, clearTokens: this.state.clearTokens });
     }
     this.syncStateToInputValue = (field, event) => {
       if(field === "email"){
         this.setState({...this.state, email: event.target.value});
-      }else{
+      }else if(field === "password"){
         this.setState({...this.state, password: event.target.value});
+      }else{
+        this.setState({...this.state, clearTokens: !this.state.clearTokens});
       }
     }
   }
 
   componentDidMount(){
     const authentication = this.props.authentication;
-    if(authentication !== undefined && authentication.token !== undefined ){
+    if(authentication !== undefined && authentication.isClient && authentication.token !== undefined ){
+          window.location.hash = "#/clientProducts";
+      }
+    else if(authentication !== undefined && authentication.token !== undefined ){
       window.location.hash = "#/products";
     }
+
   }
 
   render() {
@@ -59,7 +68,7 @@ class Login extends Component {
           <Grid item xs={10} md={5} lg={4}>
             <Paper style={panelPadding}>
               <Typography type="display1" component="h3">
-                Admin Login
+                User Login
               </Typography>
               <br />
               <form style={formStyle} noValidate autoComplete="off">
@@ -72,13 +81,24 @@ class Login extends Component {
                   onChange={(event) => this.syncStateToInputValue("email", event)}
                 />
                 <TextField
-                  style={{ maxWidth: "20rem" }}
+                  style={{ maxWidth: "20rem", marginBottom: "2rem" }}
                   id="password"
                   type="password"
                   label="Password"
                   fullWidth
                   margin="normal"
                   onChange={(event) => this.syncStateToInputValue("password", event)}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      id="sessions"
+                      name="sessions"
+                      checked={this.state.clearTokens}
+                      onChange={(event) => this.syncStateToInputValue("sessions", event)}
+                    />
+                  }
+                  label="Delete other sessions"
                 />
               </form><br /><br />
               <Button

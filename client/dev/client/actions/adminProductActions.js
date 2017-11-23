@@ -1,6 +1,7 @@
 import * as actions from './action-types';
 import callApi from '../utils/apiCaller';
 import { getProducts } from './productView';
+import { customSnackbar, forceLogoutOrError } from './index';
 
 // -----------------------------------------------
 //                MODIFY PRODUCT
@@ -11,13 +12,37 @@ export const modifyProduct = (body) => {
             if (shouldModifyProduct(getState())) {
                 dispatch(modifyProductRequest());
 
+                body = {
+                    ...body,
+                    camera: (body.camera) ? 'true' : 'false',
+                    electronictype: body.electronicType,
+                    displaysize: body.displaySize,
+                    harddrive: body.hardDrive,
+                    touchscreen: (body.touchscreen) ? 'true' : 'false',
+                    touchScreen: (body.touchscreen) ? 'true' : 'false'
+                };
+
                 return callApi(`api/products/${getState().product.dropDownsProduct.id}`, 'put', body, `Bearer ${getState().authentication.token}`).then(
                     res => {
-                        dispatch(modifyProductSuccess(res));
-                        dispatch(modifyProductSuccessSnackbar());
-                        dispatch(getProducts());
+                        if (res.data) {
+                            dispatch(modifyProductSuccess(res));
+                            dispatch(modifyProductSuccessSnackbar());
+                            dispatch(getProducts());
+                        } else {
+                            let message = 'Error in one or more input fields.';
+
+                            if (res.error && res.error.message) {
+                                message = res.error.message;
+                            }
+
+                            dispatch(customSnackbar(message));
+                            dispatch(modifyProductFailure());
+                        }
                     },
-                    error => dispatch(modifyProductFailure())
+                    error => forceLogoutOrError(error, dispatch, () => {
+                          dispatch(modifyProductFailure());
+                        }
+                      )
                 );
             }
         }
@@ -51,19 +76,35 @@ export const addProduct = (body) => {
 
                 body = {
                     ...body,
+                    camera: (body.camera) ? 'true' : 'false',
                     electronictype: body.electronicType,
                     displaysize: body.displaySize,
                     harddrive: body.hardDrive,
-                    touchscreen: body.touchScreen
+                    touchscreen: (body.touchscreen) ? 'true' : 'false',
+                    touchScreen: (body.touchscreen) ? 'true' : 'false'
                 };
 
                 return callApi('api/products', 'post', body, `Bearer ${getState().authentication.token}`).then(
                     res => {
-                        dispatch(addProductSuccess(res));
-                        dispatch(addProductSuccessSnackbar());
-                        dispatch(getProducts());
+                        if (res.data) {
+                            dispatch(addProductSuccess(res));
+                            dispatch(addProductSuccessSnackbar());
+                            dispatch(getProducts());
+                        } else {
+                            let message = 'Error in one or more input fields.';
+
+                            if (res.error && res.error.message) {
+                                message = res.error.message;
+                            }
+
+                            dispatch(customSnackbar(message));
+                            dispatch(addProductFailure());
+                        }
                     },
-                    error => dispatch(addProductFailure())
+                    error => forceLogoutOrError(error, dispatch, () => {
+                          dispatch(addProductFailure());
+                        }
+                      )
                 );
             }
         }
@@ -95,34 +136,58 @@ export const deleteProduct = (product) => {
         if (getState().authentication && getState().authentication.token) {
             return callApi(`api/products/${product.id}`, 'delete', undefined, `Bearer ${getState().authentication.token}`).then(
                 res => dispatch(getProducts()),
-                error => console.log("error in deleting")
+                error => forceLogoutOrError(error, dispatch, () => {
+                      console.log("error in deleting");
+                    }
+                  )
             );
         }
     };
 }
 
 // -----------------------------------------------
-//             MODIFY PRODUCT INVENTORY
+//             PRODUCT INVENTORY
 //------------------------------------------------
-export const addToInventory = (productId) => {
+export const fetchInventory = (productId) => {
+    return (dispatch, getState) => {
+        dispatch(fetchInventoryRequest());
+        return callApi(`api/inventories/product/${productId}`, 'get').then(
+            res => dispatch(receiveInventoryCount(res)),
+            error => forceLogoutOrError(error, dispatch, () => {
+                dispatch(receiveInventoryCount({ count: 0 }));
+            })
+        );
+    }
+}
 
+export const fetchInventoryRequest = () => { return { type: actions.GET_INVENTORY_COUNT}; }
+
+export const receiveInventoryCount = (inventory) => { 
+    var count = (inventory.count === undefined)?0:inventory.count;
+    return { type: actions.RECEIVE_INVENTORY_COUNT, count }; 
+}
+
+export const addToInventory = (productId) => {
     return (dispatch, getState) => {
         if (getState().authentication && getState().authentication.token) {
             return callApi(`api/inventories/product/${productId}`, 'post', undefined, `Bearer ${getState().authentication.token}`).then(
                 res => console.log("added to inventory"),
-                error => console.log("failed to add to inventory")
+                error => forceLogoutOrError(error, dispatch, () => {
+                    console.log("failed to add to inventory");
+                })
             );
         }
     }
 }
 
 export const removeFromInventory = (productId) => {
-
     return (dispatch, getState) => {
         if (getState().authentication && getState().authentication.token) {
             return callApi(`api/inventories/product/${productId}`, 'delete', undefined, `Bearer ${getState().authentication.token}`).then(
                 res => console.log("removed from inventory"),
-                error => console.log("failed to remove from inventory")
+                error => forceLogoutOrError(error, dispatch, () => {
+                    console.log("failed to remove from inventory");
+                })
             );
         }
     }

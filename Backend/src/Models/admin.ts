@@ -4,8 +4,8 @@ import { User } from "./user";
 var db =   new dbconnection().getDBConnector();
 
 export class Admin extends User {
-    constructor(id: string, fname: string, lname: string, email: string, password: string) {
-        super(id, fname, lname, email, password);
+    constructor(id: string, fname: string, lname: string, email: string, password: string, token: string) {
+        super(id, fname, lname, email, password, token);
     }
 
     public static async find(id:string){
@@ -13,7 +13,7 @@ export class Admin extends User {
     //return new Admin("id", "fname", "lname", "email", "password");
     db.one("SELECT * FROM admins WHERE id ='" + id + "';")
         .then(function (row) {
-            admin = new Admin(row.id, row.fname, row.lname, row.email, row.password)
+            admin = new Admin(row.id, row.fname, row.lname, row.email, row.password, row.token)
         }).catch(function (err) {
             console.log("No matching object found");
             return null;
@@ -31,7 +31,7 @@ export class Admin extends User {
         db.one("SELECT * FROM admins WHERE email ='"+ email + "';")
             .then(function (row) {
                 console.log(row);
-                admin = new Admin(row.id, row.fname, row.lname, row.email, row.password);
+                admin = new Admin(row.id, row.fname, row.lname, row.email, row.password, row.token);
             }).catch(function (err) {
                 console.log("No matching object found");
                 console.log(err);
@@ -51,7 +51,7 @@ export class Admin extends User {
                 let adminObjects: User[] = new Array<User>();
                 for(var i=0; i<data.length; i++){
                     adminObjects.push(new Admin(data[i].id,data[i].fname,data[i].lname,
-                    data[i].email, data[i].password));
+                    data[i].email, data[i].password, data[i].token));
                 }
                 return adminObjects;
             }).catch(function(err){
@@ -69,11 +69,9 @@ export class Admin extends User {
                 return false;
             });
     }
-
-    public checkPrivilege(route: string): boolean
-    {
-        return true;
+    
+    public getType(): string {
+        return Admin.name;
     }
-        
 
 }
