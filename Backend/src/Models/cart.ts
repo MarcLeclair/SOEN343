@@ -31,14 +31,8 @@ export class Cart implements Igateway{
      * Method to return all carts saved in the database
      *******************************************************/
     private static async findAllPurchased(): Promise<Cart[]>{
-        return db.many('SELECT * FROM cart;')
-            .then(function(rows) {
-                let carts: Cart[] = new Array<Cart>();
-                for(let i=0; i < rows.length; i++) {
-                    carts.push(new Cart(rows[i].id, rows[i].client_id));
-                }
-                return carts;
-            }).catch(function (err) {
+        return db.map<Cart>('SELECT * FROM cart', [], a => new Cart(a.id, a.client_id))
+            .catch(function (err) {
                 console.log("There was an error retrieving all carts: " + err);
                 return null;
             });
